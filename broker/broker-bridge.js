@@ -11,7 +11,8 @@ const onMiraieStateChanged = function (topic, payload) {
   const device = _devices.find(d => d.statusTopic === topic || d.connectionStatusTopic === topic);
   if (!device) return;
 
-  device.status = JSON.parse(payload.toString());
+  // Merge so state (statusTopic) and onlineStatus (connectionStatusTopic) don't overwrite each other.
+  device.status = { ...device.status, ...JSON.parse(payload.toString()) };
   Logger.logDebug(`Received update from MirAIe for ${device.friendlyName}.`);
 
   if (device.statusTopic == topic) {    

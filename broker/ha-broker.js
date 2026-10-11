@@ -24,13 +24,34 @@ const publishDisoveryMessages = () => {
   });
 };
 
+const getHAStatusTopic = () => `${discoveryPrefix}/status`;
+
+// HA forgets non-retained discovery, state and availability when it restarts.
+const republishAll = () => {
+  publishDisoveryMessages();
+  discoveredDevices
+    .filter(d => d.status)
+    .map(d => {
+      generateStateMessages(d).map(m => publishMessage(m.topic, m.payload));
+      generateAvailabilityMessage(d).map(m => publishMessage(m.topic, m.payload));
+    });
+};
+
 const onConnected = () => {
   Logger.logInfo('HA broker connected.');
   publishDisoveryMessages();
-  mqttClient.subscribe(topics, { qos: 2 });
+  mqttClient.subscribe([...topics, getHAStatusTopic()], { qos: 2 });
 };
 
 const onMessageReceieved = (topic, payload) => {
+  if (topic === getHAStatusTopic()) {
+    if (payload.toString() === 'online') {
+      Logger.logInfo('Home Assistant came online, republishing devices.');
+      republishAll();
+    }
+    return;
+  }
+
   if (onCmdReceivedCallback) {
     onCmdReceivedCallback(topic, payload);
   }
