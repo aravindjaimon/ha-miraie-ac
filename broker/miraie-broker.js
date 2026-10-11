@@ -9,7 +9,8 @@ const CMD_TYPES = {
   MODE: 'mode',
   TEMPERATURE: 'temp',
   FAN: 'fan',
-  DISPLAY: 'display'
+  DISPLAY: 'display',
+  RAW: 'raw'
 };
 
 const brokerDetails = {
@@ -56,6 +57,10 @@ const getCommandType = topic => {
 
   if (topic.endsWith('/display/set')) {
     return CMD_TYPES.DISPLAY;
+  }
+
+  if (topic.endsWith('/raw/set')) {
+    return CMD_TYPES.RAW;
   }
 };
 
@@ -118,6 +123,32 @@ const generateDisplayMessage = (basePayload, command, topic) => {
   ];
 };
 
+// Sends an arbitrary JSON object of MirAIe keys, e.g. {"acdc":"off"}, for experimenting.
+const generateRawMessage = (basePayload, command, topic) => {
+  let fields;
+  try {
+    fields = JSON.parse(command);
+  } catch (e) {
+    Logger.logError(`Invalid JSON on raw command: ${command}`);
+    return [];
+  }
+
+  if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
+    Logger.logError(`Raw command must be a JSON object: ${command}`);
+    return [];
+  }
+
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        ...fields
+      }
+    }
+  ];
+};
+
 const generateMessages = (topic, command, cmdType, basePayload) => {
   switch (cmdType) {
     case CMD_TYPES.MODE:
@@ -128,6 +159,8 @@ const generateMessages = (topic, command, cmdType, basePayload) => {
       return generateFanMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.DISPLAY:
       return generateDisplayMessage(basePayload, command.toLowerCase(), topic);
+    case CMD_TYPES.RAW:
+      return generateRawMessage(basePayload, command, topic);
   }
   return [];
 };
