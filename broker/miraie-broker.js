@@ -10,10 +10,22 @@ const CMD_TYPES = {
   MODE: 'mode',
   TEMPERATURE: 'temp',
   FAN: 'fan',
-  SWING: 'swing',
-  DISPLAY: 'display',
   RAW: 'raw'
 };
+
+// HA command topic segment -> MirAIe key, for commands that only set that key.
+const SIMPLE_COMMANDS = new Map([
+  ['swing', 'acvs'],
+  ['h-swing', 'achs'],
+  ['converti', 'cnv'],
+  ['display', 'acdc'],
+  ['powerful', 'acpm'],
+  ['eco', 'acem'],
+  ['clean', 'acec'],
+  ['buzzer', 'bzr']
+]);
+
+const NUMERIC_KEYS = ['acvs', 'achs', 'cnv'];
 
 const brokerDetails = {
   host: 'mqtt.miraie.in',
@@ -59,14 +71,6 @@ const getCommandType = topic => {
 
   if (topic.endsWith('/fan/set')) {
     return CMD_TYPES.FAN;
-  }
-
-  if (topic.endsWith('/swing/set')) {
-    return CMD_TYPES.SWING;
-  }
-
-  if (topic.endsWith('/display/set')) {
-    return CMD_TYPES.DISPLAY;
   }
 
   if (topic.endsWith('/raw/set')) {
@@ -130,26 +134,21 @@ const generateFanMessage = (basePayload, command, topic) => {
   ];
 };
 
-// acvs: 0 = auto, 1 (top) to 5 (bottom).
-const generateSwingMessage = (basePayload, command, topic) => {
-  return [
-    {
-      topic,
-      payload: {
-        ...basePayload,
-        acvs: command == 'auto' ? 0 : parseInt(command)
-      }
-    }
-  ];
-};
+const getSimpleCommandKey = topic => SIMPLE_COMMANDS.get(topic.split('/').slice(-2)[0]);
 
-const generateDisplayMessage = (basePayload, command, topic) => {
+const generateSimpleMessage = (basePayload, key, command, topic) => {
+  const value = NUMERIC_KEYS.includes(key) ? parseInt(command) : command.toLowerCase();
+  if (Number.isNaN(value)) {
+    Logger.logError(`Invalid value for ${key}: ${command}`);
+    return [];
+  }
+
   return [
     {
       topic,
       payload: {
         ...basePayload,
-        acdc: command
+        [key]: value
       }
     }
   ];
@@ -191,10 +190,6 @@ const generateMessages = (topic, command, cmdType, basePayload) => {
       return generateTemperatureMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.FAN:
       return generateFanMessage(basePayload, command.toLowerCase(), topic);
-    case CMD_TYPES.SWING:
-      return generateSwingMessage(basePayload, command.toLowerCase(), topic);
-    case CMD_TYPES.DISPLAY:
-      return generateDisplayMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.RAW:
       return generateRawMessage(basePayload, command, topic);
   }
@@ -219,8 +214,10 @@ MiraieBroker.prototype.connect = function (username, password) {
 
 MiraieBroker.prototype.publish = function (device, command, commandTopic) {
   const basePayload = buildBasePayload(device);
-  const cmdType = getCommandType(commandTopic);
-  const messages = generateMessages(device.controlTopic, command, cmdType, basePayload);
+  const key = getSimpleCommandKey(commandTopic);
+  const messages = key
+    ? generateSimpleMessage(basePayload, key, command, device.controlTopic)
+    : generateMessages(device.controlTopic, command, getCommandType(commandTopic), basePayload);
   messages.map(m => {
     mqttClient.publish(m.topic, m.payload, 0, false, onPublishCompleted);
   });
