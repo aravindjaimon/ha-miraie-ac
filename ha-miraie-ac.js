@@ -120,7 +120,7 @@ module.exports = function (RED) {
 
     node.on('close', function () {
       clearInterval(_reloginTimer);
-      disconnectBrokers();
+      _brokerBridge.disconnectBrokers();
     });
 
     node.on('input', function () {
