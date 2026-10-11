@@ -6,6 +6,7 @@ let topics;
 let onStateChangedCallback;
 
 const CMD_TYPES = {
+  POWER: 'power',
   MODE: 'mode',
   TEMPERATURE: 'temp',
   FAN: 'fan',
@@ -43,6 +44,10 @@ const buildBasePayload = () => {
 };
 
 const getCommandType = topic => {
+  if (topic.endsWith('/power/set')) {
+    return CMD_TYPES.POWER;
+  }
+
   if (topic.endsWith('/mode/set')) {
     return CMD_TYPES.MODE;
   }
@@ -62,6 +67,18 @@ const getCommandType = topic => {
   if (topic.endsWith('/raw/set')) {
     return CMD_TYPES.RAW;
   }
+};
+
+const generatePowerMessage = (basePayload, command, topic) => {
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        ps: command
+      }
+    }
+  ];
 };
 
 const generateModeMessages = (basePayload, command, topic) => {
@@ -151,6 +168,8 @@ const generateRawMessage = (basePayload, command, topic) => {
 
 const generateMessages = (topic, command, cmdType, basePayload) => {
   switch (cmdType) {
+    case CMD_TYPES.POWER:
+      return generatePowerMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.MODE:
       return generateModeMessages(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.TEMPERATURE:
