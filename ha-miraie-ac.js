@@ -7,6 +7,10 @@ const _brokerBridge = new BrokerBridge();
 const _miraieApi = new Miraie();
 
 let _logToSidebar = () => {};
+let _reloginTimer;
+
+// The access token lasts ~84 days; re-login well before that (setTimeout caps at ~24.8 days).
+const RELOGIN_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const isConfigValid = () => {
   const errors = [];
@@ -74,13 +78,29 @@ const processHome = (node, home) => {
 
   _brokerBridge.initialize(home, settings);
   setNodeStatus(node, 'Connected');
+
+  clearInterval(_reloginTimer);
+  _reloginTimer = setInterval(() => relogin(node), RELOGIN_INTERVAL_MS);
+};
+
+const relogin = node => {
+  return _miraieApi
+    .login()
+    .then(accessToken => _brokerBridge.reconnectMiraie(accessToken))
+    .catch(e => setNodeError(node, e, 'Error logging in to MirAIe.'));
 };
 
 const refreshStatus = node => {
   _miraieApi
     .getDeviceStatus()
     .then(_brokerBridge.publishDeviceStatus)
-    .catch(e => setNodeError(node, e, 'Error connecting to MirAIe servers.'));
+    .catch(e => {
+      if (e.response && e.response.status === 401) {
+        Logger.logInfo('MirAIe access token rejected, logging in again.');
+        return relogin(node);
+      }
+      setNodeError(node, e, 'Error connecting to MirAIe servers.');
+    });
 };
 
 module.exports = function (RED) {
@@ -99,6 +119,7 @@ module.exports = function (RED) {
     Logger.logInfo('Starting MirAIe node...');
 
     node.on('close', function () {
+      clearInterval(_reloginTimer);
       disconnectBrokers();
     });
 
