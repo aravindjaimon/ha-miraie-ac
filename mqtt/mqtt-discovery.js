@@ -21,7 +21,9 @@ const generateConfigPayload = device => {
     temp_stat_tpl: '{{ value_json.actmp }}',
 
     curr_temp_t: stateTopic,
-    curr_temp_tpl: '{{ value_json.rmtmp }}',
+    // Newer firmware packs rmtmp, e.g. 150.27 = 27; a fraction other than .0/.5 is the real temperature.
+    curr_temp_tpl:
+      "{% set t = value_json.rmtmp | string %}{% set p = t.split('.') %}{{ p[1] | int if p | length == 2 and p[1] | int not in [0, 5, 50] else t | float }}",
 
     max_temp: '30',
     min_temp: '16',
