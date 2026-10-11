@@ -36,6 +36,11 @@ const generateConfigPayload = device => {
     modes: ['auto', 'cool', 'dry', 'fan_only', 'off'],
     fan_modes: ['auto', 'quiet', 'low', 'medium', 'high'],
 
+    swing_mode_cmd_t: `miraie-ac/${deviceName}/swing/set`,
+    swing_mode_stat_t: stateTopic,
+    swing_mode_stat_tpl: "{{ 'auto' if value_json.acvs | int == 0 else value_json.acvs }}",
+    swing_modes: ['auto', '1', '2', '3', '4', '5'],
+
     dev: {
       ids: [device.id, device.details.macAddress],
       mf: device.details.brand,

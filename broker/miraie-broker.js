@@ -10,6 +10,7 @@ const CMD_TYPES = {
   MODE: 'mode',
   TEMPERATURE: 'temp',
   FAN: 'fan',
+  SWING: 'swing',
   DISPLAY: 'display',
   RAW: 'raw'
 };
@@ -58,6 +59,10 @@ const getCommandType = topic => {
 
   if (topic.endsWith('/fan/set')) {
     return CMD_TYPES.FAN;
+  }
+
+  if (topic.endsWith('/swing/set')) {
+    return CMD_TYPES.SWING;
   }
 
   if (topic.endsWith('/display/set')) {
@@ -125,6 +130,19 @@ const generateFanMessage = (basePayload, command, topic) => {
   ];
 };
 
+// acvs: 0 = auto, 1 (top) to 5 (bottom).
+const generateSwingMessage = (basePayload, command, topic) => {
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        acvs: command == 'auto' ? 0 : parseInt(command)
+      }
+    }
+  ];
+};
+
 const generateDisplayMessage = (basePayload, command, topic) => {
   return [
     {
@@ -173,6 +191,8 @@ const generateMessages = (topic, command, cmdType, basePayload) => {
       return generateTemperatureMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.FAN:
       return generateFanMessage(basePayload, command.toLowerCase(), topic);
+    case CMD_TYPES.SWING:
+      return generateSwingMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.DISPLAY:
       return generateDisplayMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.RAW:
