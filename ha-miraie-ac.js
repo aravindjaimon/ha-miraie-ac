@@ -48,6 +48,7 @@ const initializeNode = (node, config) => {
   settings.haBrokerPassword = node.credentials.haBrokerPassword;
   settings.useCleanSession = config.useCleanSession;
   settings.useSsl = config.useSsl;
+  settings.haDiscoveryPrefix = config.haDiscoveryPrefix || 'homeassistant';
 
   Logger.initialize(node, config.logLevel, _logToSidebar);
 };

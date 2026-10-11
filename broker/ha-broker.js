@@ -6,6 +6,7 @@ const Logger = require('../utilities/logger');
 let mqttClient;
 let mqttDisco;
 let topics;
+let discoveryPrefix;
 let discoveredDevices;
 let onCmdReceivedCallback;
 
@@ -15,7 +16,7 @@ const publishMessage = (topic, payload) => {
 
 const publishDisoveryMessages = () => {
   discoveredDevices.map(d => {
-    const messages = mqttDisco.generateDiscoMessage(d);
+    const messages = mqttDisco.generateDiscoMessage(d, discoveryPrefix);
     
     messages.map(m => {
       publishMessage(m.topic, m.payload);
@@ -107,6 +108,7 @@ function HABroker(devices, onCmdReceieved) {
 
 HABroker.prototype.connect = function (settings) {
   const clientId = 'node-red-ha-miraie-ac-node' + Utils.generateId(5);
+  discoveryPrefix = settings.haDiscoveryPrefix;
   mqttClient.connect(
     settings.haBrokerHost,
     settings.haBrokerPort,

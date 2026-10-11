@@ -135,18 +135,18 @@ const generateDisplaySwitchPayload = device => {
 
 function MqttDiscovery() {}
 
-MqttDiscovery.prototype.generateDiscoMessage = function (device) {
+MqttDiscovery.prototype.generateDiscoMessage = function (device, prefix) {
   return [{
-      topic: `homeassistant/climate/${device.name}/config`,
+      topic: `${prefix}/climate/${device.name}/config`,
       payload: generateConfigPayload(device)
     }, {
-      topic: `homeassistant/sensor/monthly-power-consumption/${device.name}/config`,
+      topic: `${prefix}/sensor/monthly-power-consumption/${device.name}/config`,
       payload: generateMonthlyPowerConsumptionPayload(device)
     }, {
-      topic: `homeassistant/sensor/daily-power-consumption/${device.name}/config`,
+      topic: `${prefix}/sensor/daily-power-consumption/${device.name}/config`,
       payload: generateDailyPowerConsumptionPayload(device)
     }, {
-      topic: `homeassistant/switch/miraie-display/${device.name}/config`,
+      topic: `${prefix}/switch/miraie-display/${device.name}/config`,
       payload: generateDisplaySwitchPayload(device)
     }
   ];
