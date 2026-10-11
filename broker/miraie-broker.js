@@ -81,27 +81,24 @@ const generatePowerMessage = (basePayload, command, topic) => {
   ];
 };
 
+// One message per change so the AC beeps once; 'off' has no matching acmd value.
 const generateModeMessages = (basePayload, command, topic) => {
-  const powerMode = command == 'off' ? 'off' : 'on';
+  if (command == 'off') {
+    return generatePowerMessage(basePayload, 'off', topic);
+  }
+
   const acMode = command == 'fan_only' ? 'fan' : command;
 
-  const powerMessage = {
-    topic,
-    payload: {
-      ...basePayload,
-      ps: powerMode
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        ps: 'on',
+        acmd: acMode
+      }
     }
-  };
-
-  const modeMessage = {
-    topic,
-    payload: {
-      ...basePayload,
-      acmd: acMode
-    }
-  };
-
-  return [powerMessage, modeMessage];
+  ];
 };
 
 const generateTemperatureMessage = (basePayload, command, topic) => {
