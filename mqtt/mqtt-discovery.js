@@ -197,6 +197,33 @@ const generateSelectPayload = (device, select) => {
   return discoMsg;
 };
 
+const generateWifiSignalPayload = device => {
+  const deviceName = device.name;
+
+  const discoMsg = {
+    name: `WiFi Signal - ${device.friendlyName}`,
+    unique_id: `wifi-signal-${deviceName}`,
+    avty_t: `miraie-ac/${deviceName}/availability`,
+    pl_avail: 'online',
+    pl_not_avail: 'offline',
+    stat_t: `miraie-ac/${deviceName}/state`,
+    val_tpl: '{{ value_json.rssi }}',
+    unit_of_meas: 'dBm',
+    dev_cla: 'signal_strength',
+    stat_cla: 'measurement',
+    ent_cat: 'diagnostic',
+    dev: {
+      ids: [device.id, device.details.macAddress],
+      mf: device.details.brand,
+      name: device.friendlyName,
+      mdl: device.details.modelNumber,
+      sw: device.details.firmwareVersion
+    }
+  };
+
+  return discoMsg;
+};
+
 function MqttDiscovery() {}
 
 MqttDiscovery.prototype.generateDiscoMessage = function (device, prefix) {
@@ -209,6 +236,9 @@ MqttDiscovery.prototype.generateDiscoMessage = function (device, prefix) {
     }, {
       topic: `${prefix}/sensor/daily-power-consumption/${device.name}/config`,
       payload: generateDailyPowerConsumptionPayload(device)
+    }, {
+      topic: `${prefix}/sensor/miraie-wifi-signal/${device.name}/config`,
+      payload: generateWifiSignalPayload(device)
     },
     ...SWITCHES.map(sw => ({
       topic: `${prefix}/switch/miraie-${sw.id}/${device.name}/config`,
