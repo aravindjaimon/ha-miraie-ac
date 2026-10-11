@@ -8,7 +8,8 @@ let onStateChangedCallback;
 const CMD_TYPES = {
   MODE: 'mode',
   TEMPERATURE: 'temp',
-  FAN: 'fan'
+  FAN: 'fan',
+  DISPLAY: 'display'
 };
 
 const brokerDetails = {
@@ -51,6 +52,10 @@ const getCommandType = topic => {
 
   if (topic.endsWith('/fan/set')) {
     return CMD_TYPES.FAN;
+  }
+
+  if (topic.endsWith('/display/set')) {
+    return CMD_TYPES.DISPLAY;
   }
 };
 
@@ -101,6 +106,18 @@ const generateFanMessage = (basePayload, command, topic) => {
   ];
 };
 
+const generateDisplayMessage = (basePayload, command, topic) => {
+  return [
+    {
+      topic,
+      payload: {
+        ...basePayload,
+        acdc: command
+      }
+    }
+  ];
+};
+
 const generateMessages = (topic, command, cmdType, basePayload) => {
   switch (cmdType) {
     case CMD_TYPES.MODE:
@@ -109,6 +126,8 @@ const generateMessages = (topic, command, cmdType, basePayload) => {
       return generateTemperatureMessage(basePayload, command.toLowerCase(), topic);
     case CMD_TYPES.FAN:
       return generateFanMessage(basePayload, command.toLowerCase(), topic);
+    case CMD_TYPES.DISPLAY:
+      return generateDisplayMessage(basePayload, command.toLowerCase(), topic);
   }
   return [];
 };
